@@ -9,4 +9,64 @@
 </div>
 
 ## Environment Setup
--  TODO
+- Create python environment
+    - `conda create -n NetMamba python=3.10.13`
+    - `conda activate NetMamba`
+- Install PyTorch 2.1.1+cu121 (we conduct experiments on this version)
+    - `pip install torch==2.1.1 torchvision==0.16.1 --index-url https://download.pytorch.org/whl/cu121`
+- Install Mamba 1.1.1
+    - `cd mamba-1p1p1`
+    - `pip install -e .`
+- Install other dependent libraries
+    - `pip install -r requirements.txt`
+
+## Data Preparation
+### Download our processed datasets
+For simplicity, you are welcome to download our processed datasets on which our experiments are conducted from [google drive](https://drive.google.com/drive/folders/1C1urXBhk09V7Z80Kk5JYuP7QeXiedUIl?usp=sharing). 
+
+Each dataset are organized into the following structure:
+```text
+.
+|-- train
+|   |-- Category 1
+|   |   |-- Sample 1
+|   |   |-- Sample 2
+|   |   |-- ...
+|   |   `-- Sample M
+|   |-- Category 2
+|   |-- ...
+|   `-- Catergory N
+|-- test
+`-- valid
+```
+### Process your own datasets
+If you'd like to generate customized datasets, please refer to preprocessing scripts provided in [dataset](https://github.com/wangtz19/NetMamba/tree/main/dataset). Note that you need to change several file paths accordingly.
+
+## Run NetMamba
+- Run pre-training: 
+```shell
+CUDA_VISIBLE_DEVICES=0 python src/pre-train.py \\
+    --batch_size 128 \\
+    --blr 1e-3 \\
+    --steps 150000 \\
+    --mask_ratio 0.9 \\
+    --data_path <your-dataset-dir> \\
+    --output_dir <your-output-dir> \\
+    --log_dir <your-output-dir> \\
+    --model net_mamba_pretrain \\
+    --no_amp
+```
+- Run fine-tuning (including evaluation)
+```shell
+CUDA_VISIBLE_DEVICES=0 python src/fine-tune.py \\
+    --blr 2e-3 \\
+    --epochs 120 \\
+    --nb_classes <num-class> \\
+    --finetune <pretrain-checkpoint-path> \\
+    --data_path <your-dataset-dir> \\
+    --output_dir <your-output-dir> \\
+    --log_dir <your-output-dir> \\
+    --model net_mamba_classifier \\
+    --no_amp
+```
+Note that you should replace variable in the `< >` format with your actual values.
