@@ -24,7 +24,7 @@
 ### Download our processed datasets
 For simplicity, you are welcome to download our processed datasets on which our experiments are conducted from [google drive](https://drive.google.com/drive/folders/1C1urXBhk09V7Z80Kk5JYuP7QeXiedUIl?usp=sharing). 
 
-Each dataset are organized into the following structure:
+Each dataset is organized into the following structure:
 ```text
 .
 |-- train
