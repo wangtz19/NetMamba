@@ -76,3 +76,15 @@ CUDA_VISIBLE_DEVICES=0 python src/fine-tune.py \\
     --no_amp
 ```
 Note that you should replace variable in the `< >` format with your actual values.
+
+## Citation
+```
+@misc{wang2024netmamba,
+      title={NetMamba: Efficient Network Traffic Classification via Pre-training Unidirectional Mamba}, 
+      author={Tongze Wang and Xiaohui Xie and Wenduo Wang and Chuyi Wang and Youjian Zhao and Yong Cui},
+      year={2024},
+      eprint={2405.11449},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+```
