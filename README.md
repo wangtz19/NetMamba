@@ -1,6 +1,12 @@
 <div align="center">
 <h1>NetMamba </h1>
 <h3>Efficient Network Traffic Classification via Pre-training Unidirectional Mamba</h3>
+
+[Tongze Wang](https://github.com/wangtz19), [Xiaohui Xie](https://thuxiexiaohui.github.io/)<sup>:email:</sup>, [Wenduo Wang](https://github.com/Viz7), [Chuyi Wang](https://github.com/Judy456abc), [Youjian Zhao](https://www.cs.tsinghua.edu.cn/info/1126/3576.htm), [Yong Cui](https://www.cuiyong.net/index.html)
+
+(<sup>:email:</sup>) corresponding author
+
+ArXiv Paper ([arXiv 2405.11449](https://arxiv.org/abs/2405.11449))
 </div>
 
 ## Overview
