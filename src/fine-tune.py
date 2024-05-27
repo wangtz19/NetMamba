@@ -333,7 +333,7 @@ def main(args):
             args=args
         )
 
-        test_stats = evaluate(data_loader_val, model, device, if_stat=args.if_stat)
+        test_stats = evaluate(data_loader_val, model, device)
         if test_stats["acc"] > best_acc:
             best_acc = test_stats["acc"]
             best_epoch = epoch

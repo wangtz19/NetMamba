@@ -93,7 +93,8 @@ class NetMamba(nn.Module):
     def initialize_weights(self):
         # initialization
         trunc_normal_(self.pos_embed, std=.02)
-        trunc_normal_(self.decoder_pos_embed, std=.02)
+        if self.is_pretrain:
+            trunc_normal_(self.decoder_pos_embed, std=.02)
 
         # initialize patch_embed like nn.Linear (instead of nn.Conv2d)
         w = self.patch_embed.proj.weight.data
@@ -101,7 +102,8 @@ class NetMamba(nn.Module):
 
         # timm's trunc_normal_(std=.02) is effectively normal_(std=0.02) as cutoff is too big (2.)
         torch.nn.init.normal_(self.cls_token, std=.02)
-        torch.nn.init.normal_(self.mask_token, std=.02)
+        if self.is_pretrain:
+            torch.nn.init.normal_(self.mask_token, std=.02)
 
         # initialize nn.Linear and nn.LayerNorm
         self.apply(self._init_weights)
@@ -117,6 +119,10 @@ class NetMamba(nn.Module):
             nn.init.constant_(m.weight, 1.0)
         elif isinstance(m, nn.Embedding):
             nn.init.normal_(m.weight, std=0.02)
+    
+    @torch.jit.ignore
+    def no_weight_decay(self):
+        return {"pos_embed", "cls_token", "dist_token", "cls_token_head", "cls_token_tail"}
     
     def stride_patchify(self, imgs, stride_size=4):
         """
