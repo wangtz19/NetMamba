@@ -311,7 +311,7 @@ def main(args):
     misc.load_model(args=args, model_without_ddp=model_without_ddp, optimizer=optimizer, loss_scaler=loss_scaler)
 
     if args.eval:
-        test_stats = evaluate(data_loader_val, model, device, if_stat=args.if_stat)
+        test_stats = evaluate(data_loader_val, model, device)
         print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
         exit(0)
 
@@ -379,7 +379,7 @@ def main(args):
 
     best_checkpoint = torch.load(os.path.join(args.output_dir, "checkpoint-best.pth"), map_location='cpu')
     model.load_state_dict(best_checkpoint['model'])
-    test_result = evaluate(data_loader_test, model, device, if_stat=args.if_stat)
+    test_result = evaluate(data_loader_test, model, device)
     with open(os.path.join(args.output_dir, "test_stats.json"), mode="w", encoding="utf-8") as f:
         json.dump({
             "loss": test_result["loss"],
