@@ -7,6 +7,7 @@ from PIL import Image
 import random
 import numpy as np
 import shutil
+import argparse
 
 
 def sample_pcap(minimum=200, maximum=3000, input_dir="CICIoT2022/flows/1-Power",
@@ -79,15 +80,14 @@ def pcap_to_array(pcap_dir, if_augment=False):
                 if not if_augment:
                     image_filename = f"{image_dir}/{flow_dir_name}/{pcap_filename[:-len('.pcap')]}.png"
                     stat_filename = image_filename.replace(".png", ".json")
-                    res = read_5hp_list(f"{pcap_dir}/{flow_dir_name}/{pcap_filename}", if_stat=True)[0]
+                    res = read_5hp_list(f"{pcap_dir}/{flow_dir_name}/{pcap_filename}")[0]
                     flow_array = res.pop("data")
                     image = Image.fromarray(flow_array.reshape(40, 40).astype(np.uint8))
                     image.save(image_filename)
                     with open(stat_filename, "w") as f:
                         json.dump(res, f)
                 else:
-                    res_list = read_5hp_list(f"{pcap_dir}/{flow_dir_name}/{pcap_filename}", 
-                                    if_augment=True, if_stat=True)
+                    res_list = read_5hp_list(f"{pcap_dir}/{flow_dir_name}/{pcap_filename}", if_augment=True)
                     for i, res in enumerate(res_list):
                         image_filename = f"{image_dir}/{flow_dir_name}/{pcap_filename[:-len('.pcap')]}-{i}.png"
                         stat_filename = image_filename.replace(".png", ".json")
@@ -158,7 +158,19 @@ def merge_dataset():
         subprocess.run(f"cp '{filename}' '{dst_filename}'", shell=True)
 
 if __name__ == "__main__":
-    sample_all_pcap()
-    all_pcap_to_array()
-    split_all_datasets()
-    merge_dataset()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--sample", action="store_true", help="Sample pcap files")
+    parser.add_argument("--array", action="store_true", help="Convert pcap files to array")
+    parser.add_argument("--split", action="store_true", help="Split dataset into train, valid, and test sets for finetuning")
+    parser.add_argument("--merge", action="store_true", help="Merge all datasets into one for pretraining")
+    parser.add_argument("--all", action="store_true", help="Run all steps")
+    args = parser.parse_args()
+
+    if args.sample or args.all:
+        sample_all_pcap()
+    if args.array or args.all:
+        all_pcap_to_array()
+    if args.split or args.all:
+        split_all_datasets()
+    if args.merge or args.all:
+        merge_dataset()
