@@ -387,6 +387,7 @@ def main(args):
             "weighted_pre": test_result["weighted_pre"],
             "weighted_rec": test_result["weighted_rec"],
             "weighted_f1": test_result["weighted_f1"],
+            "cm": test_result["cm"],
         }, f, indent=2)
 
 if __name__ == '__main__':
