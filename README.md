@@ -75,6 +75,9 @@ CUDA_VISIBLE_DEVICES=0 python src/fine-tune.py \\
 ```
 Note that you should replace variable in the `< >` format with your actual values.
 
+## Checkpoint
+The pre-trained checkpoint of NetMamba is available for download on our [huggingface repo](https://huggingface.co/wangtz/NetMamba). Feel free to access it at your convenience. If you require any other type of checkpoints, please contact us via [email](wangtz23@mails.tsinghua.edu.cn).
+
 ## Citation
 ```
 @misc{wang2024netmamba,
