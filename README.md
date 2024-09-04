@@ -4,7 +4,7 @@
 
 [Tongze Wang](https://github.com/wangtz19), [Xiaohui Xie](https://thuxiexiaohui.github.io/), [Wenduo Wang](https://github.com/Viz7), [Chuyi Wang](https://github.com/Judy456abc), [Youjian Zhao](https://www.cs.tsinghua.edu.cn/info/1126/3576.htm), [Yong Cui](https://www.cuiyong.net/index.html)
 
-ArXiv Paper ([arXiv 2405.11449](https://arxiv.org/abs/2405.11449))
+ICNP 2024 ([arXiv paper](https://arxiv.org/abs/2405.11449))
 </div>
 
 ## Overview
@@ -76,7 +76,7 @@ CUDA_VISIBLE_DEVICES=0 python src/fine-tune.py \\
 Note that you should replace variable in the `< >` format with your actual values.
 
 ## Checkpoint
-The pre-trained checkpoint of NetMamba is available for download on our [huggingface repo](https://huggingface.co/wangtz/NetMamba). Feel free to access it at your convenience. If you require any other type of checkpoints, please contact us via [email](wangtz23@mails.tsinghua.edu.cn).
+The pre-trained checkpoint of NetMamba is available for download on our [huggingface repo](https://huggingface.co/wangtz/NetMamba). Feel free to access it at your convenience. If you require any other type of checkpoints, please contact us via email (wangtz23@mails.tsinghua.edu.cn).
 
 ## Citation
 ```
