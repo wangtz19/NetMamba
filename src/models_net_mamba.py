@@ -1,8 +1,58 @@
 import torch
 import torch.nn as nn
 from timm.models.layers import DropPath
-from models_mamba import create_block, RMSNorm, rms_norm_fn, PACKET_NUM, StrideEmbed
-from timm.models.layers import trunc_normal_
+from models_mamba import create_block, RMSNorm, rms_norm_fn, StrideEmbed
+from timm.models.layers import trunc_normal_, lecun_normal_
+import math
+from functools import partial
+
+
+# https://github.com/huggingface/transformers/blob/c28d04e9e252a1a099944e325685f14d242ecdcd/src/transformers/models/gpt2/modeling_gpt2.py#L454
+def _init_weights(
+    module,
+    n_layer,
+    initializer_range=0.02,  # Now only used for embedding layer.
+    rescale_prenorm_residual=True,
+    n_residuals_per_layer=1,  # Change to 2 if we have MLP
+):
+    if isinstance(module, nn.Linear):
+        if module.bias is not None:
+            if not getattr(module.bias, "_no_reinit", False):
+                nn.init.zeros_(module.bias)
+    elif isinstance(module, nn.Embedding):
+        nn.init.normal_(module.weight, std=initializer_range)
+
+    if rescale_prenorm_residual:
+        # Reinitialize selected weights subject to the OpenAI GPT-2 Paper Scheme:
+        #   > A modified initialization which accounts for the accumulation on the residual path with model depth. Scale
+        #   > the weights of residual layers at initialization by a factor of 1/√N where N is the # of residual layers.
+        #   >   -- GPT-2 :: https://openai.com/blog/better-language-models/
+        #
+        # Reference (Megatron-LM): https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/model/gpt_model.py
+        for name, p in module.named_parameters():
+            if name in ["out_proj.weight", "fc2.weight"]:
+                # Special Scaled Initialization --> There are 2 Layer Norms per Transformer Block
+                # Following Pytorch init, except scale by 1/sqrt(2 * n_layer)
+                # We need to reinit p since this code could be called multiple times
+                # Having just p *= scale would repeatedly scale it down
+                nn.init.kaiming_uniform_(p, a=math.sqrt(5))
+                with torch.no_grad():
+                    p /= math.sqrt(n_residuals_per_layer * n_layer)
+
+
+def segm_init_weights(m):
+    if isinstance(m, nn.Linear):
+        trunc_normal_(m.weight, std=0.02)
+        if isinstance(m, nn.Linear) and m.bias is not None:
+            nn.init.constant_(m.bias, 0)
+    elif isinstance(m, (nn.Conv2d, nn.Conv1d)):
+        # NOTE conv was left to pytorch default in my original init
+        lecun_normal_(m.weight)
+        if m.bias is not None:
+            nn.init.zeros_(m.bias)
+    elif isinstance(m, (nn.LayerNorm, nn.GroupNorm, nn.BatchNorm2d)):
+        nn.init.zeros_(m.bias)
+        nn.init.ones_(m.weight)
 
 
 class NetMamba(nn.Module):
@@ -11,6 +61,7 @@ class NetMamba(nn.Module):
                  decoder_embed_dim=128, decoder_depth=2,
                  num_classes=1000,
                  norm_pix_loss=False,
+                 drop_rate=0.,
                  drop_path_rate=0.1,
                  bimamba_type="none",
                  is_pretrain=False,
@@ -36,6 +87,7 @@ class NetMamba(nn.Module):
         dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]  # stochastic depth decay rule
         inter_dpr = [0.0] + dpr
         self.drop_path = DropPath(drop_path_rate) if drop_path_rate > 0. else nn.Identity()
+        self.pos_drop = nn.Dropout(p=drop_rate)
         self.blocks = nn.ModuleList([
             create_block(
                 embed_dim,
@@ -88,37 +140,18 @@ class NetMamba(nn.Module):
             # --------------------------------------------------------------------------
 
         self.norm_pix_loss = norm_pix_loss
-        self.initialize_weights()
-
-    def initialize_weights(self):
-        # initialization
+        self.patch_embed.apply(segm_init_weights)
+        if not self.is_pretrain:
+            self.head.apply(segm_init_weights)
         trunc_normal_(self.pos_embed, std=.02)
+        trunc_normal_(self.cls_token, std=.02)
         if self.is_pretrain:
             trunc_normal_(self.decoder_pos_embed, std=.02)
-
-        # initialize patch_embed like nn.Linear (instead of nn.Conv2d)
-        w = self.patch_embed.proj.weight.data
-        torch.nn.init.xavier_uniform_(w.view([w.shape[0], -1]))
-
-        # timm's trunc_normal_(std=.02) is effectively normal_(std=0.02) as cutoff is too big (2.)
-        torch.nn.init.normal_(self.cls_token, std=.02)
-        if self.is_pretrain:
-            torch.nn.init.normal_(self.mask_token, std=.02)
+            trunc_normal_(self.mask_token, std=.02)
 
         # initialize nn.Linear and nn.LayerNorm
-        self.apply(self._init_weights)
-
-    def _init_weights(self, m):
-        if isinstance(m, nn.Linear):
-            # we use xavier_uniform following official JAX ViT:
-            torch.nn.init.xavier_uniform_(m.weight)
-            if isinstance(m, nn.Linear) and m.bias is not None:
-                nn.init.constant_(m.bias, 0)
-        elif isinstance(m, nn.LayerNorm):
-            nn.init.constant_(m.bias, 0)
-            nn.init.constant_(m.weight, 1.0)
-        elif isinstance(m, nn.Embedding):
-            nn.init.normal_(m.weight, std=0.02)
+        self.apply(partial(_init_weights, n_layer=depth,))
+        
     
     @torch.jit.ignore
     def no_weight_decay(self):
@@ -180,6 +213,7 @@ class NetMamba(nn.Module):
         cls_token = self.cls_token + self.pos_embed[:, -1, :]
         cls_tokens = cls_token.expand(x.shape[0], -1, -1)
         x = torch.cat((x, cls_tokens), dim=1)
+        x = self.pos_drop(x)
 
         # apply Mamba blocks
         residual = None
