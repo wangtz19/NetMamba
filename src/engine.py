@@ -253,11 +253,13 @@ def evaluate_speed_test(data_loader, model, device, args):
     model.eval()
     model_mem = torch.cuda.memory_allocated() / (1024**2)
     res_list = []
-    for i in tqdm(range(4, 11), desc="Batch size"):
+    for i in tqdm(range(3, 11), desc="Batch size"):
         # reset memory
         torch.cuda.reset_peak_memory_stats()
         torch.cuda.reset_max_memory_allocated()
         batch_size = 2 ** i
+        if i == 3:
+            batch_size = 2 ** 10
         data_loader_tmp = torch.utils.data.DataLoader(data_loader.dataset, sampler=data_loader.sampler,
                             batch_size=batch_size, shuffle=False, num_workers=10, pin_memory=True, drop_last=False)
         pred_all = []
@@ -283,6 +285,9 @@ def evaluate_speed_test(data_loader, model, device, args):
         max_mem = torch.cuda.max_memory_allocated() / (1024**2)
         torch.cuda.empty_cache()
         gc.collect()
+
+        if i == 3: # only for warming up
+            continue
         res_list.append({
             "batch size": batch_size,
             "time (s)": end_time - start_time,

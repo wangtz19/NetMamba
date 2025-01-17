@@ -54,6 +54,7 @@ def get_args_parser():
                         help='whether to use statistical features')
     # evaluation settings
     parser.add_argument('--speed_test', action='store_true')
+    parser.add_argument('--byte_length', default=1600, type=int)
 
     return parser
 
@@ -89,6 +90,7 @@ def main(args):
 
     dataset_val = build_dataset(is_train=False, args=args)
     labels = dataset_val.classes
+    print(dataset_val.class_to_idx)
 
     sampler_val = torch.utils.data.SequentialSampler(dataset_val)
     data_loader_val = torch.utils.data.DataLoader(
@@ -102,6 +104,7 @@ def main(args):
     model = models_net_mamba.__dict__[args.model](
         num_classes=args.nb_classes,
         drop_path_rate=args.drop_path,
+        byte_length=args.byte_length,
     )
     try:
         checkpoint = torch.load(args.resume, map_location='cpu')
@@ -115,7 +118,16 @@ def main(args):
     model.to(device)
 
     if args.speed_test:
-        evaluate_speed_test(data_loader_val, model, device, args)
+        dataset_train = build_dataset(is_train=True, args=args)
+        sampler_train = torch.utils.data.SequentialSampler(dataset_train)
+        data_loader_train = torch.utils.data.DataLoader(
+            dataset_train, sampler=sampler_train,
+            batch_size=args.batch_size,
+            num_workers=args.num_workers,
+            pin_memory=args.pin_mem,
+            drop_last=False
+        )
+        evaluate_speed_test(data_loader_train, model, device, args)
         return
 
     # test_stats = evaluate(data_loader_val, model, device)

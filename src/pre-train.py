@@ -100,6 +100,8 @@ def get_args_parser():
     parser.add_argument('--pop', action='store_true', help='packet order prediction')
     parser.add_argument('--pop_loss_weight', default=0.01, type=float, 
                         help='packet order prediction loss weight')
+    
+    parser.add_argument('--byte_length', default=1600, type=int, help='byte length')
     return parser
 
 
@@ -154,6 +156,7 @@ def main(args):
     # define the model
     model = models_net_mamba.__dict__[args.model](
         norm_pix_loss=args.norm_pix_loss,
+        byte_length=args.byte_length,
     )
 
     model.to(device)

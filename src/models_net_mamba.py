@@ -56,7 +56,7 @@ def segm_init_weights(m):
 
 
 class NetMamba(nn.Module):
-    def __init__(self, img_size=40, stride_size=4, in_chans=1,
+    def __init__(self, byte_length=1600, stride_size=4, in_chans=1,
                  embed_dim=192, depth=4, 
                  decoder_embed_dim=128, decoder_depth=2,
                  num_classes=1000,
@@ -75,10 +75,11 @@ class NetMamba(nn.Module):
         self.num_classes = num_classes
         self.d_model = self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
         self.is_pretrain = is_pretrain
+        self.stride_size = stride_size
 
         # --------------------------------------------------------------------------
         # NetMamba encoder specifics
-        self.patch_embed = StrideEmbed(img_size, img_size, stride_size, in_chans, embed_dim)
+        self.patch_embed = StrideEmbed(byte_length, stride_size, in_chans, embed_dim)
         self.num_patches = self.patch_embed.num_patches
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         num_cls_token = 1
@@ -157,13 +158,14 @@ class NetMamba(nn.Module):
     def no_weight_decay(self):
         return {"pos_embed", "cls_token", "dist_token", "cls_token_head", "cls_token_tail"}
     
-    def stride_patchify(self, imgs, stride_size=4):
+    def stride_patchify(self, imgs):
         """
         imgs: (N, 1, H, W)
         x: (N, L, patch_size**2 *1)
         """
         B, C, H, W = imgs.shape
         assert C == 1, "Input images should be grayscale"
+        stride_size = self.stride_size
         x = imgs.reshape(B, H*W // stride_size, stride_size)
         return x
 
@@ -307,12 +309,38 @@ class NetMamba(nn.Module):
 
 def net_mamba_pretrain(**kwargs):
     model = NetMamba(
-        is_pretrain=True, img_size=40, stride_size=4, embed_dim=256, depth=4,
+        is_pretrain=True, stride_size=4, embed_dim=256, depth=4,
         decoder_embed_dim=128, decoder_depth=2, **kwargs)
     return model
 
 def net_mamba_classifier(**kwargs):
     model = NetMamba(
-        is_pretrain=False, img_size=40, stride_size=4, embed_dim=256, depth=4,
+        is_pretrain=False, stride_size=4, embed_dim=256, depth=4,
         **kwargs)
+    return model
+
+def net_mamba_bl400_pretrain(**kwargs):
+    model = NetMamba(
+        is_pretrain=True, stride_size=4, embed_dim=256, depth=4,
+        decoder_embed_dim=128, decoder_depth=2, 
+        byte_length=400, **kwargs)
+    return model
+
+def net_mamba_bl400_classifier(**kwargs):
+    model = NetMamba(
+        is_pretrain=False, stride_size=4, embed_dim=256, depth=4,
+        byte_length=400, **kwargs)
+    return model
+
+def net_mamba_bl800_pretrain(**kwargs):
+    model = NetMamba(
+        is_pretrain=True, stride_size=4, embed_dim=256, depth=4,
+        decoder_embed_dim=128, decoder_depth=2, 
+        byte_length=800, **kwargs)
+    return model
+
+def net_mamba_bl800_classifier(**kwargs):
+    model = NetMamba(
+        is_pretrain=False, stride_size=4, embed_dim=256, depth=4,
+        byte_length=800, **kwargs)
     return model

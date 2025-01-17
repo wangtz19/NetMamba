@@ -22,6 +22,7 @@ from util.misc import count_parameters
 import models_net_mamba
 from contextlib import suppress
 from engine import train_one_epoch, evaluate
+import torch.nn.functional as F
 
 
 def get_args_parser():
@@ -135,7 +136,42 @@ def get_args_parser():
     parser.add_argument('--no_amp', action='store_false', dest='if_amp')
     parser.set_defaults(if_amp=True)
 
+    parser.add_argument('--byte_length', default=1600, type=int, help='byte length')
+    parser.add_argument("--class_balance", action="store_true",
+                        help="whether to use class-balanced loss")
+    parser.add_argument("--class_balance_beta", default=0.999, type=float,)
+    parser.add_argument("--ldam", action="store_true",
+                        help="whether to use LDAM loss")
     return parser
+
+
+class LDAMLoss(torch.nn.Module):
+    
+    def __init__(self, cls_num_list, device, max_m=0.5, weight=None, s=30,
+                 label_smoothing=0):
+        super(LDAMLoss, self).__init__()
+        m_list = 1.0 / np.sqrt(np.sqrt(cls_num_list))
+        m_list = m_list * (max_m / np.max(m_list))
+        m_list = torch.tensor(m_list, device=device, dtype=torch.float32)
+        self.m_list = m_list
+        assert s > 0
+        self.s = s
+        self.weight = weight
+        self.label_smoothing = label_smoothing
+
+    def forward(self, x, target):
+        index = torch.zeros_like(x, dtype=torch.uint8)
+        index.scatter_(1, target.data.view(-1, 1), 1)
+        
+        index_float = index.to(x.device).float()
+        batch_m = torch.matmul(self.m_list[None, :], index_float.transpose(0,1))
+        batch_m = batch_m.view((-1, 1))
+        x_m = x - batch_m
+    
+        output = torch.where(index, x_m, x)
+        return F.cross_entropy(self.s*output, target, weight=self.weight, 
+                               label_smoothing=self.label_smoothing)
+
 
 def build_dataset(data_split, args):
     mean = [0.5]
@@ -234,6 +270,7 @@ def main(args):
     model = models_net_mamba.__dict__[args.model](
         num_classes=args.nb_classes,
         drop_path_rate=args.drop_path,
+        byte_length=args.byte_length,
     )
 
     trainable_params, all_param = count_parameters(model)
@@ -298,7 +335,22 @@ def main(args):
         amp_autocast = torch.cuda.amp.autocast
         loss_scaler = NativeScaler()
 
-    if mixup_fn is not None:
+    num_sample_per_cls = torch.zeros(args.nb_classes)
+    for _, label in dataset_train:
+        num_sample_per_cls[label] += 1
+    effective_num = 1.0 - torch.pow(args.class_balance_beta, num_sample_per_cls)
+    weights = (1.0 - args.class_balance_beta) / effective_num
+    weights = weights / torch.sum(weights) * args.nb_classes
+    weights = weights.to(device)
+
+    if args.ldam:
+        criterion = LDAMLoss(cls_num_list=num_sample_per_cls.tolist(), 
+                             device=device,
+                             weight=weights if args.class_balance else None,
+                             label_smoothing=args.smoothing)
+    elif args.class_balance:
+        criterion = torch.nn.CrossEntropyLoss(weight=weights, label_smoothing=args.smoothing)
+    elif mixup_fn is not None:
         # smoothing is handled with mixup label transform
         criterion = SoftTargetCrossEntropy()
     elif args.smoothing > 0.:
