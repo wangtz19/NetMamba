@@ -80,12 +80,12 @@ The pre-trained checkpoint of NetMamba is available for download on our [hugging
 
 ## Citation
 ```
-@misc{wang2024netmamba,
-      title={NetMamba: Efficient Network Traffic Classification via Pre-training Unidirectional Mamba}, 
-      author={Tongze Wang and Xiaohui Xie and Wenduo Wang and Chuyi Wang and Youjian Zhao and Yong Cui},
-      year={2024},
-      eprint={2405.11449},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
+@inproceedings{wang2024netmamba,
+  title={Netmamba: Efficient network traffic classification via pre-training unidirectional mamba},
+  author={Wang, Tongze and Xie, Xiaohui and Wang, Wenduo and Wang, Chuyi and Zhao, Youjian and Cui, Yong},
+  booktitle={2024 IEEE 32nd International Conference on Network Protocols (ICNP)},
+  pages={1--11},
+  year={2024},
+  organization={IEEE}
 }
 ```
