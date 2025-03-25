@@ -231,11 +231,11 @@ def evaluate(data_loader, model, device, if_stat=False):
                     macro_f1=macro[2]))
 
     test_state = {k: meter.global_avg for k, meter in metric_logger.meters.items()}
-    test_state['weighted_pre'] = macro[0]
-    test_state['weighted_rec'] = macro[1]
-    test_state['weighted_f1'] = macro[2]
-    test_state['cm'] = cm
-    test_state['acc'] = acc
+    test_state['weighted_pre'] = macro[0].tolist()
+    test_state['weighted_rec'] = macro[1].tolist()
+    test_state['weighted_f1'] = macro[2].tolist()
+    test_state['cm'] = cm.tolist()
+    test_state['acc'] = acc.tolist()
     test_state['pre_per_class'] = pre_per_class
     test_state['rec_per_class'] = rec_per_class
     test_state['f1_per_class'] = f1_per_class
