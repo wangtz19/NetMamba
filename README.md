@@ -12,6 +12,9 @@ ICNP 2024 ([arXiv paper](https://arxiv.org/abs/2405.11449))
 <img src="assets/NetMamba.png" />
 </div>
 
+## Updates
+[2026-04-05] We have released the source code for our journal paper [NetMamba+](https://arxiv.org/abs/2601.21792). Click [here](https://github.com/wangtz19/NetMambaPlus) and try the latest version.
+
 ## Environment Setup
 - Create python environment
     - `conda create -n NetMamba python=3.10.13`
